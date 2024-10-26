@@ -1,0 +1,96 @@
+<html>
+<head>
+  <base href="/mermaid/" />
+  <link rel="stylesheet" href="mermaid.css">
+  <script src="./mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ "theme": "default", "startOnLoad": false })
+    loadDiagrams()
+
+    function loadDiagrams() {
+      const getVersion = ondone => {
+        var context = {}
+        fetch('/api/sql?sql=SELECT max(Major) FROM MigrationVersion&db=SoterDBLocal')
+          .then(resp => resp.json())
+          .then(json => context.ldb = json[0][0])
+          .then(_ => fetch('/api/sql?sql=SELECT max(Major) FROM MigrationVersion&db=SoterDBData'))
+          .then(resp => resp.json())
+          .then(json => context.cdb = json[0][0])
+          .then(_ => ondone(context))
+      }
+      const importJson = (name, ondone) => import(`./${name}.json`, { with: { type: "json" } })
+        .then(ondone)
+      importJson('er', er => importJson('SoterDBData', central => importJson('SoterDBLocal', local => {
+        er.default.cdb.model = central.default
+        er.default.ldb.model = local.default
+        getVersion(version => renderDiagrams(version, er.default))
+        fetch('/api/file?path=C:\\ProgramData\\ODSecurity\\SoterDB\\Config\\DBConnection.ini')
+          .then(resp => resp.text())
+          .then(text => document.title = text
+              .split('\r\n')
+              .filter(ln => ln.includes(' = '))
+              .map(ln => ln.split(' = '))
+              .reduce((a, c) => ({...a, [c[0]]: c[1]}), {}).Datasource
+          )
+      })))
+    }
+    
+    function renderDiagrams(version, er) {
+      const addDetails = (parent, title, level) => {
+        const details = parent.appendChild(document.createElement('details'))
+        details.name = `ODS-${level}`
+        const summary = details.appendChild(document.createElement('summary'))
+        summary.innerText = title
+        return details
+      }
+      const setClipboard = (text, type = 'text/plain') => navigator
+        .clipboard
+        .write([new ClipboardItem({ [type]: new Blob([text], { type }) })])
+      const createDiagram = (parent, source, pre = parent.appendChild(document.createElement('pre'))) => {
+        pre.className = 'mermaid'
+        pre.innerHTML = source
+        return pre
+      }
+      const root = addDetails(document.body, 'Model', 0)
+      const lines = []
+      Object.keys(er)
+        .forEach(key => {
+          lines.push(`## ${key.toUpperCase()} (${version[key]})`)
+          const { modules, model, database } = er[key], db = addDetails(root, `${key.toUpperCase()} (${version[key]})`, 1)
+          modules.forEach(module => {
+            const key = Object.keys(module)[0]
+            const entities = module[key]
+            const detail = addDetails(db, key, 2)
+            const mapper = arr => arr.map(kvp => `  ${kvp.value}`).join('\n')
+            const source = 'classDiagram\n' + mapper(model.filter(line => entities.includes(line.key)))
+            ;[`### ${key}`, '::: mermaid', ...source.split('\n'), ':::'].forEach(ln => lines.push(ln))
+            createDiagram(detail, source)
+          })
+        })
+      const summary = addDetails(root, 'Markdown', 1).appendChild(document.createElement('summary'))
+      const button = summary.appendChild(document.createElement('button'))
+      button.innerText = 'Copy'
+      button.addEventListener('click', e => {
+        setClipboard(textarea.value)
+        button.insertAdjacentHTML('afterend', getCheck())
+      })
+      const textarea = summary.appendChild(document.createElement('textarea'))
+      textarea.cols = textarea.rows = 40
+      textarea.value = [`# Model`, ...lines].join('\n')
+      const refreshButton = root.appendChild(document.createElement('button'))
+      refreshButton.innerText = 'Refresh Model'
+      refreshButton.addEventListener('click', e => readModel(root))
+      mermaid.run()
+    }
+    
+    function readModel(root) {
+      fetch('/api/refreshmodel?src=./er.sql&dbs=SoterDBLocal&dbs=SoterDBData')
+        .then(resp => resp.text())
+        .then(txt => root.appendChild(document.createElement('span')).textContent = getCheck())
+    }
+    
+    function getCheck() { return String.fromCodePoint(0x2705) }
+  </script>
+</head>
+<body></body>
+</html>
