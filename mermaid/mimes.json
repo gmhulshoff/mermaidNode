@@ -1,0 +1,12 @@
+{
+  "css": "text/css",
+  "js": "text/javascript",
+  "ico": "image/xicon",
+  "txt": "text/plain",
+  "html": "text/html",
+  "htm": "text/html",
+  "json": "application/json",
+  "png": "image/png",
+  "gif": "image/gif",
+  "jpg": "image/jpeg"
+}

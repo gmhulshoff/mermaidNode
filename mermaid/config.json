@@ -1,0 +1,5 @@
+{  
+  "server": "localhost",
+  "authentication": { "type": "default", "options": { "userName": "sa", "password": "ODSecurity1234" } },
+  "options": { "encrypt": false, "trustServerCertificate": true }
+}

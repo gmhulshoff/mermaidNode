@@ -1,0 +1,23 @@
+{
+  "cdb": {
+    "modules": [
+      { "FileStreams" : ["PersonPhoto", "SoterRSImageStore", "SoterRSCalibrationImageStore"] },
+      { "System tables" : ["sysdiagrams"] },
+      { "Audittrails" : ["AuditTrail", "Institution", "Persons"] },
+      { "Misc" : ["ActivityLog", "Configurations", "MigrationVersion"] },
+      { "Credentials" : ["UsedPasswords", "Credentials", "Persons"] },
+      { "Scans": [ "ScanAnonymous", "Calibration", "ScanCalibration", "Scans", "Persons", "ScanReasons", "ScanResults", "ScanConfigs" ]}
+    ]
+  },
+  "ldb": {
+    "modules": [
+      { "FileStreams" : ["PersonPhoto", "SoterRSImageStore", "SoterRSCalibrationImageStore", "SoterRSRawImageStore"] },
+      { "System tables" : ["sysdiagrams"] },
+      { "Audittrails" : ["AuditTrail", "Persons"] },
+      { "Misc" : ["ActivityLog", "Configurations", "DosageLookup", "LanguageResource", "MachineIdentity", "MigrationVersion", "PersonActionRecord", "Properties", "SessionVariables" ] },
+      { "Devices": ["WarmingUpHistory", "WarmingUpSteps", "WarmingUpProcedure", "Devices"] }, 
+      { "Credentials": [ "Logs", "Credentials", "Persons", "PasswordSettings", "RoleToAuths", "AuthToRole", "Roles", "Authorizations" ] }, 
+      { "Scans": ["ScanAnonymous", "Calibration", "ScanCalibration", "Scans", "ScanConfigs", "Persons", "ScanResults", "ScanReasons"]}
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "ods",
+  "version": "1.0.0",
+  "description": "Node library",
+  "main": "ws.js",
+  "scripts": {
+    "start": "node ws",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Gerard Hulshoff",
+  "license": "MIT",
+  "dependencies": {
+    "tedious": "^18.6.1"
+  }
+}

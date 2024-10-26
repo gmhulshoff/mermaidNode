@@ -1,0 +1,17 @@
+* { font: 15px Arial, sans-serif; }
+body { background-color: gray; }
+details { margin-left: 1em; }
+summary { margin-left: -1em; }
+pre { display: contents; }
+.entityLabel { font-size: 12px !important; }
+.nodeLabel { font-size: 12px !important; }
+details[open] > summary { background-color: #0f0; color: black; }
+details > summary {
+  padding: 2px 6px;
+  width: 16em;
+  background-color: #0f0;
+  color: black;
+  border: none;
+  box-shadow: 6px 6px 6px green;
+  cursor: pointer;
+}

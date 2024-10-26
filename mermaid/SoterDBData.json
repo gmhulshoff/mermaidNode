@@ -1,0 +1,166 @@
+[
+  {
+    "key": "ActivityLog",
+    "value": "class ActivityLog{\n   int Id\n   datetime Date\n   nvarchar_255 Thread\n   nvarchar_50 Level\n   nvarchar_255 Logger\n   nvarchar_4000 Message\n   nvarchar_2000 Exception\n   nvarchar_100 Code\n   nvarchar_500 User\n   nvarchar_500 Source\n   nvarchar_100 SourceVersion\n   nvarchar_4000 Description\n  }"
+  },
+  {
+    "key": "AuditTrail",
+    "value": "AuditTrail <|-- Institution : has"
+  },
+  {
+    "key": "AuditTrail",
+    "value": "class AuditTrail{\n   int Id\n   datetime Timestamp\n   int Institution\n   nvarchar_30 SoterSerialNumber\n   nvarchar_30 PersonID\n   nvarchar_100 LocationOfChange\n   nvarchar_30 OldValue\n   nvarchar_30 NewValue\n   nvarchar_20 Unit\n  }"
+  },
+  {
+    "key": "Calibration",
+    "value": "Calibration <|-- Institution : has"
+  },
+  {
+    "key": "Calibration",
+    "value": "Calibration <|-- ScanConfigs : has"
+  },
+  {
+    "key": "Calibration",
+    "value": "class Calibration{\n   int CalibrationPK\n   nvarchar_200 CalibrationType\n   nvarchar_500 FilePath\n   datetime Timestamp\n   int Institution\n   nvarchar_30 SoterSerialNumber\n   bit IsFilestream\n   int ScanConfig\n  }"
+  },
+  {
+    "key": "Configurations",
+    "value": "class Configurations{\n   int ConfigPK\n   int ConfigParentPK\n   nvarchar_150 ConfigName\n   nvarchar_20 ConfigVersion\n   nvarchar_500 Property\n   nvarchar_MAX Value\n   nvarchar_50 DataType\n  }"
+  },
+  {
+    "key": "Configurations",
+    "value": "Configurations <|-- Configurations : has"
+  },
+  {
+    "key": "Credentials",
+    "value": "class Credentials{\n   int CredentialPK\n   int Person\n   nvarchar_75 UserName\n   nvarchar_200 Password\n   datetime PasswordExpires\n   datetime LastLogin\n   bit AccountBlocked\n   nvarchar_MAX Comment\n   date PasswordLastChangedOn\n   nvarchar_MAX UserSettings\n  }"
+  },
+  {
+    "key": "Credentials",
+    "value": "Credentials <|-- Persons : has"
+  },
+  {
+    "key": "Institution",
+    "value": "class Institution{\n   int InstitutePK\n   varchar_200 Name\n   nvarchar_500 Address\n   varchar_200 Station\n   varchar_200 Department\n  }"
+  },
+  {
+    "key": "MigrationVersion",
+    "value": "class MigrationVersion{\n   int Major\n   int Minor\n   datetime LastModified\n  }"
+  },
+  {
+    "key": "PersonPhoto",
+    "value": "class PersonPhoto{\n   uniqueidentifier stream_id\n   varbinary_MAX file_stream\n   nvarchar_255 name\n   hierarchyid_892 path_locator\n   hierarchyid_892 parent_path_locator\n   nvarchar_255 file_type\n   bigint cached_file_size\n   datetimeoffset creation_time\n   datetimeoffset last_write_time\n   datetimeoffset last_access_time\n   bit is_directory\n   bit is_offline\n   bit is_hidden\n   bit is_readonly\n   bit is_archive\n   bit is_system\n   bit is_temporary\n  }"
+  },
+  {
+    "key": "PersonPhoto",
+    "value": "PersonPhoto <|-- PersonPhoto : has"
+  },
+  {
+    "key": "Persons",
+    "value": "class Persons{\n   int PersonPK\n   varchar_100 PersonID\n   nvarchar_75 FirstName\n   nvarchar_75 MiddleName\n   nvarchar_75 LastName\n   date DateOfBirth\n   int Role\n   nvarchar_10 Gender\n   nvarchar_MAX FingerPrint\n   nvarchar_MAX Comment\n   bit IsActive\n   nvarchar_MAX Photo\n   int Institution\n   varchar_30 SoterSerialNumber\n   varchar_100 UniversalID\n   datetime LastModified\n   datetime DeletedTimestamp\n   varchar_MAX Barcode\n   varchar_MAX NfcTag\n  }"
+  },
+  {
+    "key": "Persons",
+    "value": "Persons <|-- Institution : has"
+  },
+  {
+    "key": "Persons",
+    "value": "Persons <|-- Roles : has"
+  },
+  {
+    "key": "Roles",
+    "value": "class Roles{\n   int RolePK\n   nvarchar_100 RoleName\n   int RoleEnum\n   nvarchar_MAX Description\n   bit ReqFingerPrint\n   bit RoleActive\n   bit IsUser\n   int DisplayOrder\n  }"
+  },
+  {
+    "key": "ScanAnonymous",
+    "value": "class ScanAnonymous{\n   int ScanAnonymousPK\n   int ScannedBy\n   datetime ScanDateTime\n   bit Positive\n   nvarchar_MAX ImageLocation\n   int LightCalibration\n   int DarkCalibration\n   nvarchar_MAX Comment\n  }"
+  },
+  {
+    "key": "ScanAnonymous",
+    "value": "ScanAnonymous <|-- Calibration : has"
+  },
+  {
+    "key": "ScanAnonymous",
+    "value": "ScanAnonymous <|-- Persons : has"
+  },
+  {
+    "key": "ScanCalibration",
+    "value": "class ScanCalibration{\n   int ScanFK\n   int DarkCalibrationFK\n   int LightCalibrationFK\n  }"
+  },
+  {
+    "key": "ScanCalibration",
+    "value": "ScanCalibration <|-- Calibration : has"
+  },
+  {
+    "key": "ScanCalibration",
+    "value": "ScanCalibration <|-- Scans : has"
+  },
+  {
+    "key": "ScanConfigs",
+    "value": "class ScanConfigs{\n   int ConfigPK\n   nvarchar_100 ConfigName\n   int Voltage_kV\n   int Current_uA\n   int Duration_ms\n   nvarchar_MAX Description\n   bit IsEnabled\n   int PlatformSpeed\n   int HorizontalPixels\n   int Acceleration\n   int Deceleration\n   int AcquisitionDelayTime_ms\n   decimal Dose\n   int Institution\n   varchar_30 SoterSerialNumber\n  }"
+  },
+  {
+    "key": "ScanConfigs",
+    "value": "ScanConfigs <|-- Institution : has"
+  },
+  {
+    "key": "ScanReasons",
+    "value": "class ScanReasons{\n   int ReasonPK\n   nvarchar_100 ReasonName\n   nvarchar_MAX Description\n   bit IsActive\n   int DisplayOrder\n  }"
+  },
+  {
+    "key": "ScanResults",
+    "value": "class ScanResults{\n   int ResultPK\n   nvarchar_100 ResultName\n   nvarchar_MAX Description\n   bit IsActive\n   bit IsPositive\n   int DisplayOrder\n  }"
+  },
+  {
+    "key": "Scans",
+    "value": "class Scans{\n   int ScanPK\n   int Person\n   int ScannedBy\n   datetime ScanDateTime\n   int ScanConfig\n   int ScanReason\n   int ScanResult\n   bit Positive\n   decimal Dose_uSv\n   nvarchar_MAX ImageLocation\n   nvarchar_MAX Comment\n   varchar_4 Orientation\n   bit IsFake\n   int Institution\n   nvarchar_30 SoterSerialNumber\n   bit IsFilestream\n   datetime LastModified\n  }"
+  },
+  {
+    "key": "Scans",
+    "value": "Scans <|-- Institution : has"
+  },
+  {
+    "key": "Scans",
+    "value": "Scans <|-- Persons : has"
+  },
+  {
+    "key": "Scans",
+    "value": "Scans <|-- ScanConfigs : has"
+  },
+  {
+    "key": "Scans",
+    "value": "Scans <|-- ScanReasons : has"
+  },
+  {
+    "key": "Scans",
+    "value": "Scans <|-- ScanResults : has"
+  },
+  {
+    "key": "SoterRSCalibrationImageStore",
+    "value": "class SoterRSCalibrationImageStore{\n   uniqueidentifier stream_id\n   varbinary_MAX file_stream\n   nvarchar_255 name\n   hierarchyid_892 path_locator\n   hierarchyid_892 parent_path_locator\n   nvarchar_255 file_type\n   bigint cached_file_size\n   datetimeoffset creation_time\n   datetimeoffset last_write_time\n   datetimeoffset last_access_time\n   bit is_directory\n   bit is_offline\n   bit is_hidden\n   bit is_readonly\n   bit is_archive\n   bit is_system\n   bit is_temporary\n  }"
+  },
+  {
+    "key": "SoterRSCalibrationImageStore",
+    "value": "SoterRSCalibrationImageStore <|-- SoterRSCalibrationImageStore : has"
+  },
+  {
+    "key": "SoterRSImageStore",
+    "value": "class SoterRSImageStore{\n   uniqueidentifier stream_id\n   varbinary_MAX file_stream\n   nvarchar_255 name\n   hierarchyid_892 path_locator\n   hierarchyid_892 parent_path_locator\n   nvarchar_255 file_type\n   bigint cached_file_size\n   datetimeoffset creation_time\n   datetimeoffset last_write_time\n   datetimeoffset last_access_time\n   bit is_directory\n   bit is_offline\n   bit is_hidden\n   bit is_readonly\n   bit is_archive\n   bit is_system\n   bit is_temporary\n  }"
+  },
+  {
+    "key": "SoterRSImageStore",
+    "value": "SoterRSImageStore <|-- SoterRSImageStore : has"
+  },
+  {
+    "key": "sysdiagrams",
+    "value": "class sysdiagrams{\n   nvarchar_128 name\n   int principal_id\n   int diagram_id\n   int version\n   varbinary_MAX definition\n  }"
+  },
+  {
+    "key": "UsedPasswords",
+    "value": "class UsedPasswords{\n   int PersonPK\n   varchar_200 UsedPassword\n   datetime PasswordChangedOn\n  }"
+  },
+  {
+    "key": "UsedPasswords",
+    "value": "UsedPasswords <|-- Persons : has"
+  }
+]
