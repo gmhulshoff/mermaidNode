@@ -1,41 +1,24 @@
 <html>
 <head>
   <base href="/mermaid/" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <link rel="stylesheet" href="mermaid.css">
+  <link rel="stylesheet" href="//cdn.datatables.net/2.1.8/css/dataTables.dataTables.min.css">
+  <title>SoterRS</title>
   <script src="./mermaid.min.js"></script>
+  <style>
+    .redclass { background-color: #ff4444 !important; }
+    .greenclass { background-color: #77ff77 !important; }
+    .blueclass { background-color: #7777ff !important; }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+  <script src="//cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
+
   <script>
     mermaid.initialize({ "theme": "default", "startOnLoad": false })
-    loadDiagrams()
+    setTimeout(() => loadDiagrams(), 100)
 
     function loadDiagrams() {
-      const getVersion = ondone => {
-        var context = {}
-        fetch('/api/sql?sql=SELECT max(Major) FROM MigrationVersion&db=SoterDBLocal')
-          .then(resp => resp.json())
-          .then(json => context.ldb = json[0][0])
-          .then(_ => fetch('/api/sql?sql=SELECT max(Major) FROM MigrationVersion&db=SoterDBData'))
-          .then(resp => resp.json())
-          .then(json => context.cdb = json[0][0])
-          .then(_ => ondone(context))
-      }
-      const importJson = (name, ondone) => import(`./${name}.json`, { with: { type: "json" } })
-        .then(ondone)
-      importJson('er', er => importJson('SoterDBData', central => importJson('SoterDBLocal', local => {
-        er.default.cdb.model = central.default
-        er.default.ldb.model = local.default
-        getVersion(version => renderDiagrams(version, er.default))
-        fetch('/api/file?path=C:\\ProgramData\\ODSecurity\\SoterDB\\Config\\DBConnection.ini')
-          .then(resp => resp.text())
-          .then(text => document.title = text
-              .split('\r\n')
-              .filter(ln => ln.includes(' = '))
-              .map(ln => ln.split(' = '))
-              .reduce((a, c) => ({...a, [c[0]]: c[1]}), {}).Datasource
-          )
-      })))
-    }
-    
-    function renderDiagrams(version, er) {
       const addDetails = (parent, title, level) => {
         const details = parent.appendChild(document.createElement('details'))
         details.name = `ODS-${level}`
@@ -43,6 +26,33 @@
         summary.innerText = title
         return details
       }
+      const getVersion = (ondone, context = {}) => fetch('/api/sql?sql=SELECT max(Major) FROM MigrationVersion&db=SoterDBLocal')
+        .then(resp => resp.json())
+        .then(json => context.ldb = json[0][0])
+        .then(_ => fetch('/api/sql?sql=SELECT max(Major) FROM MigrationVersion&db=SoterDBData'))
+        .then(resp => resp.json())
+        .then(json => context.cdb = json[0][0])
+        .then(_ => ondone(context))
+      const importJson = (name, ondone) => import(`./${name}.json`, { with: { type: "json" } })
+        .then(ondone)
+        
+      readFiles({ root: document.body, addDetails })
+      readSQL({ root: document.body, addDetails, table: 'roles', db: 'SoterDBData', sql: 'SELECT * FROM Roles', crlf: '\n' })
+      
+      return importJson('er', er => importJson('SoterDBData', central => importJson('SoterDBLocal', local => {
+        er.default.cdb.model = central.default
+        er.default.ldb.model = local.default
+        return fetch('/api/file?path=C:\\ProgramData\\ODSecurity\\SoterDB\\Config\\DBConnection.ini')
+          .then(resp => resp.text())
+          .then(text => text.split('\r\n')
+            .filter(ln => ln.includes(' = '))
+            .map(ln => ln.split(' = '))
+            .reduce((a, c) => ({...a, [c[0]]: c[1]}), {}))
+          .then(connection => getVersion(version => renderDiagrams(addDetails, version, er.default, connection.Datasource)))
+      })))
+    }
+    
+    function renderDiagrams(addDetails, version, er, connection) {
       const setClipboard = (text, type = 'text/plain') => navigator
         .clipboard
         .write([new ClipboardItem({ [type]: new Blob([text], { type }) })])
@@ -51,36 +61,85 @@
         pre.innerHTML = source
         return pre
       }
-      const root = addDetails(document.body, 'Model', 0)
+      const addRunsettings = root => {
+        const refreshButton = root.appendChild(document.createElement('button'))
+        refreshButton.innerText = 'Refresh Model'
+        refreshButton.addEventListener('click', e => readModel(root))
+      }
+      const renderSection = (module, model, db) => {
+        const key = Object.keys(module)[0]
+        const entities = module[key]
+        const detail = addDetails(db, key, 2)
+        const mapper = arr => arr.map(kvp => `  ${kvp.value}`).join('\n')
+        const source = 'classDiagram\n' + mapper(model.filter(line => entities.includes(line.key)))
+        ;[`### ${key}`, '::: mermaid', ...source.split('\n'), ':::'].forEach(ln => lines.push(ln))
+        createDiagram(detail, source)
+      }
+      const renderMarkdown = (root, lines) => {
+        const summary = addDetails(root, 'Markdown', 1).appendChild(document.createElement('summary'))
+        const button = summary.appendChild(document.createElement('button'))
+        button.innerText = 'Copy'
+        button.addEventListener('click', e => {
+          setClipboard(textarea.value)
+          button.insertAdjacentHTML('afterend', getCheck())
+        })
+        addTextArea(summary, [`# Model`, ...lines].join('\n'))
+      }
+      
+      const root = addDetails(document.body, `Model (${connection})`, 0)
+      addRunsettings(root)
       const lines = []
       Object.keys(er)
         .forEach(key => {
-          lines.push(`## ${key.toUpperCase()} (${version[key]})`)
-          const { modules, model, database } = er[key], db = addDetails(root, `${key.toUpperCase()} (${version[key]})`, 1)
-          modules.forEach(module => {
-            const key = Object.keys(module)[0]
-            const entities = module[key]
-            const detail = addDetails(db, key, 2)
-            const mapper = arr => arr.map(kvp => `  ${kvp.value}`).join('\n')
-            const source = 'classDiagram\n' + mapper(model.filter(line => entities.includes(line.key)))
-            ;[`### ${key}`, '::: mermaid', ...source.split('\n'), ':::'].forEach(ln => lines.push(ln))
-            createDiagram(detail, source)
-          })
+          lines.push(`## ${key.toUpperCase()} (V${version[key]})`)
+          const db = addDetails(root, `${key.toUpperCase()} (V${version[key]})`, 1)
+          er[key].modules.forEach(module => renderSection(module, er[key].model, db))
         })
-      const summary = addDetails(root, 'Markdown', 1).appendChild(document.createElement('summary'))
-      const button = summary.appendChild(document.createElement('button'))
-      button.innerText = 'Copy'
-      button.addEventListener('click', e => {
-        setClipboard(textarea.value)
-        button.insertAdjacentHTML('afterend', getCheck())
-      })
-      const textarea = summary.appendChild(document.createElement('textarea'))
-      textarea.cols = textarea.rows = 40
-      textarea.value = [`# Model`, ...lines].join('\n')
-      const refreshButton = root.appendChild(document.createElement('button'))
-      refreshButton.innerText = 'Refresh Model'
-      refreshButton.addEventListener('click', e => readModel(root))
-      mermaid.run()
+      renderMarkdown(root, lines)
+      return mermaid.run()
+    }
+    
+    function readFiles(params, { root, addDetails } = params) {
+      [
+        '/api/file?path=D:\\data\\node\\files\\soterrs.runsettings',
+        '/api/file?path=D:\\data\\node\\files\\commit-msg',
+        '/api/file?path=D:\\data\\node\\files\\http_logging.cs',
+        '/api/file?path=C:\\ProgramData\\ODSecurity\\SoterDB\\Config\\DBConnection.ini',
+        '/api/file?path=c:\\ProgramData\\ODSecurity\\License\\License.soterlc',
+      ].reduce((a, c) => {
+        fetch(c)
+          .then(resp => resp.text())
+          .then(txt => addTextArea(addDetails(root, c.split('\\').pop(), 1).appendChild(document.createElement('summary')), txt))
+      }, null)
+    }
+    
+    function readSQL(info, { table, db, sql, crlf, addDetails, root } = info) {
+      const metaSql = `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='${table}'`
+      const resultSet = addTextArea(addDetails(root, sql, 1).appendChild(document.createElement('summary')), '', 80)
+      fetch(`/api/sql?sql=${metaSql}&db=${db}`)
+        .then(resp => resp.json())
+        .then(headers => resultSet.value += headers.join() + crlf)
+        .then(header => fetch(`/api/sql?sql=SELECT * FROM ${table}&db=${db}`))
+        .then(resp => resp.json())
+        .then(rows => rows.map(cols => cols.join()).join(crlf))
+        .then(txt => { 
+          resultSet.value += txt
+          var rows = resultSet.value.split(crlf).map(row => row.split(','))
+          var col_lengths = rows[0].map((col, i) => Math.max(...rows.map(r => r[i].length)))
+          rows = [rows[0], rows[0].map((c, i) => '-'.repeat(col_lengths[i])), ...rows.slice(1)]
+          var formatted = rows.map(cols => cols.map((col, i) => col.padEnd(col_lengths[i], ' ')))
+          resultSet.value = formatted.map(r => '| ' + r.join(' | ') + ' |').join('\n')
+          resultSet.rows = 2 + txt.split(crlf).length
+          resultSet.cols = col_lengths.reduce((a, c) => a + c + 3, 0) - 1
+        })
+    }
+    
+    function addTextArea(parent, txt, cols = 50, rows = txt.split('\n').length) {
+      textArea = parent.appendChild(document.createElement('textarea'))
+      textArea.cols = cols
+      textArea.rows = rows
+      textArea.value = txt
+      return textArea
     }
     
     function readModel(root) {
@@ -88,9 +147,88 @@
         .then(resp => resp.text())
         .then(txt => root.appendChild(document.createElement('span')).textContent = getCheck())
     }
-    
     function getCheck() { return String.fromCodePoint(0x2705) }
+    
   </script>
 </head>
-<body></body>
+<body>
+<details>
+<summary>Logger</summary>
+<script>
+function fillTable(json, tbody = example.querySelector('tbody'), thead = example.querySelector('thead')) {
+  tbody.innerHTML = ''
+  thead.innerHTML = ''
+  var header = thead.insertRow()
+  header.insertCell().outerHTML = '<th>Date</th>'
+  header.insertCell().outerHTML = '<th>Level</th>'
+  header.insertCell().outerHTML = '<th>Logger</th>'
+  header.insertCell().outerHTML = '<th>Message</th>'
+  header.insertCell().outerHTML = '<th>Exception</th>'
+  json.forEach(data => {
+    var row = tbody.insertRow()
+    var [dt, tm] = data.date.split('T')
+    row.insertCell().innerText = tm
+    row.insertCell().innerText = data.Level
+    row.insertCell().innerHTML = data.Logger.replace(/ /g, '&nbsp;')
+    row.insertCell().innerHTML = data.Message.replace(/\\n/g, '<br/>')
+    row.insertCell().innerHTML = data.Level == 'ERROR' ? data.Exception.replace(/ > /g, '<br/>').split('<br/>').map(r => r.split('.').slice(-2).join('.')).join('<br/>') : ''
+  })
+}
+function downloadLogMessages() {
+  fetch('/logmessages')
+    .then(resp => resp.json())
+    .then(json => {
+      const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = 'log.json'
+      a.click()
+      a.remove()
+    })
+}
+function getLogMessages() {
+  fetch('/logmessages')
+    .then(resp => resp.json())
+    .then(json => {
+      var ctrls = [info, error, debug]
+      var state = ctrls.map(ctrl => ctrl.checked)
+      ctrls.forEach(ctrl => {if (!ctrl.checked) ctrl.click()}) // reset controls to state checked
+      new DataTable('#example').destroy()
+      fillTable(json)
+      const options = {
+        createdRow: (row, data, index) => row.classList.add(data[1] == 'ERROR' ? 'redclass' : data[1] == 'DEBUG' ? 'greenclass' : 'blueclass'),
+        paging: false, scrollCollapse: true, retrieve: true, scrollY: '300px'
+      }
+      const table = new DataTable('#example', options)
+      table.search.fixed('range', function (searchStr, data, index) {
+        var ids = ['#debug', '#info', '#error']
+        var isChecked = (id, chk) => chk.toLowerCase() == id.substr(1) && document.querySelector(id).checked
+        return ids.some(id => isChecked(id, data[1]))
+      })
+      ctrls.forEach(ctrl => ctrl.addEventListener('input', function () { table.draw(); }))
+      ctrls.forEach((ctrl, i) => { if (!state[i]) ctrl.click() }) // if !checked uncheck
+    })
+}
+getLogMessages()
+</script>
+<table class="inputs">
+  <thead>
+    <tr>
+        <td><button onclick="fetch('/logclear').then(_ => getLogMessages())" title="Clear">â</button></td>
+        <td><button onclick="downloadLogMessages()" title="Save">ð¾</button></td>
+        <td><button onclick="getLogMessages()" title="Refresh">ð</button></td>
+        <td><label>DEBUG<input type="checkbox" id="debug" name="debug" checked></label></td>
+        <td><label>INFO<input type="checkbox" id="info" name="info" checked></label></td>
+        <td><label>ERROR<input type="checkbox" id="error" name="error" checked></label></td>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+<table id="example" class="display compact">
+<thead></thead>
+<tbodY></tbody>
+</table>
+</details>
+</body>
 </html>
